@@ -277,17 +277,27 @@ dstat --top-bio --top-io --top-mem --top-cpu
 ```
 ![dstat.png](https://github.com/crazyboycjr/apache-drill-tpch-experiments/blob/master/measurements/dstat.png)
 
-In this picture.
+In this picture, the CPU utilization always floats at ~5%, which indicates that the CPU is not the bottleneck, thus, run multiple drill instance in the cluster get marginal earnings in performance.
+Obviously, memory is not the bottleneck either.
+The I/O seems to be the bottleneck because sometimes the java process reaches more than 262MB/s I/O speed. The timing buffered disk read speed is about 265.20 MB/sec measured by `hdparm` tool.
 
-However, on 100Gbps Ethernet, granularity of 1s interval are too rough, so I write a script to visualize the transient throughput, which calls `ethtool -S` to 
+However, on 100Gbps Ethernet, granularity of 1s interval are too rough, so I write a script which calls `ethtool -S` to read NIC counters to visualize the transient throughput,  
 ```
 measurements/bench.sh
 ```
-will generate `xmit.png` and `rcv.png` of eth10 network interface.
+will generate `rcv.png` and `xmit.png` of eth10 network interface.
 
 ![rcv.png](https://github.com/crazyboycjr/apache-drill-tpch-experiments/blob/master/measurements/rcv.png)
 ![xmit.png](https://github.com/crazyboycjr/apache-drill-tpch-experiments/blob/master/measurements/xmit.png)
 
+In these two pictures, the first is Rx throughput, and the second is Tx throughput. Both are on the same Drill node.
+The maximum Tx and Rx speed can up to ~500,000,000 Bytes/s, which does not reach the upper bound of bandwidth of 100Gbps.
+
+In conclusion,
+1. the HDFS plays an important role in disperse the I/O traffic onto multiple nodes, thus decreasing query time greatly
+2. although drillbit process runs distributedly on each node, but it brings little profits to query performance on TPC-H dataset.
+
+This explain why we can achieve similiar results on HDFS cluster with only one drillbit process running.
 
 ## References
 
