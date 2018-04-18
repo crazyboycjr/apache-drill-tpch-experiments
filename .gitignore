@@ -1,0 +1,9 @@
+# NFS temp files
+.nfs*
+
+# tarball
+*.tar.gz
+*.zip
+
+# tbl
+*.tbl
