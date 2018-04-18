@@ -213,6 +213,56 @@ If everything goes well, we should start our benchmark.
 ./bench-drill-dist.sh
 ```
 
+## Benchmark results
+single node, see [results/benchmark_results_single_0.txt](https://github.com/crazyboycjr/apache-drill-tpch-experiments/tree/master/results/benchmark_results_single_0.txt)
+```
+01.q: 4 rows selected (14.312 seconds)
+03.q: 10 rows selected (10.608 seconds)
+04.q: 5 rows selected (9.512 seconds)
+05.q: 5 rows selected (10.347 seconds)
+06.q: 1 row selected (8.921 seconds)
+07.q: 4 rows selected (13.392 seconds)
+08.q: 2 rows selected (10.257 seconds)
+09.q: 175 rows selected (14.042 seconds)
+10.q: 20 rows selected (11.048 seconds)
+11.q: 1 row selected (0.182 seconds)
+12.q: 2 rows selected (10.434 seconds)
+13.q: 42 rows selected (3.88 seconds)
+14.q: 1 row selected (9.192 seconds)
+15a.q: 1 row selected (0.128 seconds)
+15.q: 1 row selected (8.692 seconds)
+15c.q: 1 row selected (0.095 seconds)
+16.q: 18,368 rows selected (2.585 seconds)
+17.q: 1 row selected (14.768 seconds)
+18.q: 57 rows selected (15.188 seconds)
+19.q: 1 row selected (20.481 seconds)
+20.q: 181 rows selected (8.262 seconds)
+```
+
+five nodes, see [results/benchmark_results_dist_5_nodes_3.txt](https://github.com/crazyboycjr/apache-drill-tpch-experiments/tree/master/results/benchmark_results_dist_5_nodes_3.txt)
+```
+01.q: 4 rows selected (2.582 seconds)
+03.q: 10 rows selected (2.629 seconds)
+04.q: 5 rows selected (1.555 seconds)
+05.q: 5 rows selected (3.297 seconds)
+06.q: 1 row selected (1.58 seconds)
+07.q: 4 rows selected (2.541 seconds)
+08.q: 2 rows selected (3.107 seconds)
+09.q: 175 rows selected (4.135 seconds)
+10.q: 20 rows selected (2.471 seconds)
+11.q: 1 row selected (0.211 seconds)
+12.q: 2 rows selected (2.416 seconds)
+13.q: 42 rows selected (2.822 seconds)
+14.q: 1 row selected (1.655 seconds)
+15a.q: 1 row selected (0.169 seconds)
+15.q: 1 row selected (1.676 seconds)
+15c.q: 1 row selected (0.097 seconds)
+16.q: 18,368 rows selected (2.599 seconds)
+17.q: 1 row selected (3.016 seconds)
+18.q: 57 rows selected (3.743 seconds)
+19.q: 1 row selected (3.32 seconds)
+20.q: 181 rows selected (2.281 seconds)
+```
 
 
 ## References
