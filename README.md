@@ -275,7 +275,7 @@ I use `dstat` tool to monitor I/O, CPU, Memory and Network utilization every 1 s
 ```
 dstat --top-bio --top-io --top-mem --top-cpu
 ```
-![dstat.png](https://github.com/crazyboycjr/apache-drill-tpch-experiments/tree/master/measurements/dstat.png)
+![dstat.png](https://github.com/crazyboycjr/apache-drill-tpch-experiments/blob/master/measurements/dstat.png)
 
 In this picture.
 
@@ -285,8 +285,8 @@ measurements/bench.sh
 ```
 will generate `xmit.png` and `rcv.png` of eth10 network interface.
 
-![rcv.png](https://github.com/crazyboycjr/apache-drill-tpch-experiments/tree/master/measurements/rcv.png)
-![xmit.png](https://github.com/crazyboycjr/apache-drill-tpch-experiments/tree/master/measurements/xmit.png)
+![rcv.png](https://github.com/crazyboycjr/apache-drill-tpch-experiments/blob/master/measurements/rcv.png)
+![xmit.png](https://github.com/crazyboycjr/apache-drill-tpch-experiments/blob/master/measurements/xmit.png)
 
 
 ## References
