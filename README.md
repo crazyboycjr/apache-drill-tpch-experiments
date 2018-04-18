@@ -54,9 +54,9 @@ Finally, we map the `drill-override.conf` to inside container and run `drillbit.
 ```bash
 docker run -d --name apache-drill -it \
         -p 8047:8047 \
-	    -v /home/cjr/apache-drill/drill-override.conf:/usr/local/apache-drill-1.13.0/conf/drill-override.conf \
-	    smizy/apache-drill \
-	    drillbit.sh run
+        -v /home/cjr/apache-drill/drill-override.conf:/usr/local/apache-drill-1.13.0/conf/drill-override.conf \
+        smizy/apache-drill \
+        drillbit.sh run
 ```
 
 Then either access the web console or start a command-line shell
@@ -66,6 +66,25 @@ docker exec -it apache-drill drill-conf
 On successful run, the prompt should be like `0: jdbc:drill:> ` instead of `0: jdbc:drill:zk=local> `(embedded mode)
 
 ## TPC-H Dataset
+The TPC-H Tools can be download via this [link](https://cjr.host/download/TPC-H_Tools_v2.17.3.zip)
+
+Uncompress the file and go to `dbgen` directory, change the `makefile.suite` like below
+```
+...
+CC      = gcc
+# Current values for DATABASE are: INFORMIX, DB2, TDAT (Teradata)
+#                                  SQLSERVER, SYBASE, ORACLE, VECTORWISE
+# Current values for MACHINE are:  ATT, DOS, HP, IBM, ICL, MVS, 
+#                                  SGI, SUN, U2200, VMS, LINUX, WIN32 
+# Current values for WORKLOAD are:  TPCH
+DATABASE= ORACLE
+MACHINE = LINUX
+WORKLOAD = TPCH
+...
+```
+and `make`. After make finished, use `./dbgen -vf -s 1` to generate 1GB data, this data should have `.tbl` suffix, move these files to `tpch-data/`
+
+The benchmark queries and create table queries are extracted from [drill-perf-test-framework](https://github.com/mapr/drill-perf-test-framework). I made some changes to them for my environment.
 
 ## Distributed Mode
 
