@@ -264,6 +264,30 @@ five nodes, see [results/benchmark_results_dist_5_nodes_3.txt](https://github.co
 20.q: 181 rows selected (2.281 seconds)
 ```
 
+We can observe that the Apache Drill in distributed mode achieves a better performance on TPC-H dataset.
+However, I still wonder
+1. how is the scalibility of Apache Drill
+2. where is the bottleneck of these benchmark results.
+
+Apache Drill and Hadoop HDFS are complex systems. I am not a developer, thus, I can only measure it as a black box.
+
+I use `dstat` tool to monitor I/O, CPU, Memory and Network utilization every 1 second
+```
+dstat --top-bio --top-io --top-mem --top-cpu
+```
+![dstat.png](https://github.com/crazyboycjr/apache-drill-tpch-experiments/tree/master/measurements/dstat.png)
+
+In this picture.
+
+However, on 100Gbps Ethernet, granularity of 1s interval are too rough, so I write a script to visualize the transient throughput, which calls `ethtool -S` to 
+```
+measurements/bench.sh
+```
+will generate `xmit.png` and `rcv.png` of eth10 network interface.
+
+![rcv.png](https://github.com/crazyboycjr/apache-drill-tpch-experiments/tree/master/measurements/rcv.png)
+![xmit.png](https://github.com/crazyboycjr/apache-drill-tpch-experiments/tree/master/measurements/xmit.png)
+
 
 ## References
 
