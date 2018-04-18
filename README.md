@@ -17,7 +17,7 @@ This project contains scripts and instructions which runs TPC-H on Apache Drill.
 ## Docker images
 - [smizy/apache-drill](https://hub.docker.com/r/smizy/apache-drill/) Apache Drill 1.13.0
 - [smizy/hadoop-base](https://hub.docker.com/r/smizy/hadoop-base/) Apache Hadoop 2.7.4
-- [zookeeper](https://hub.docker.com/_/zookeeper/)
+- [zookeeper](https://hub.docker.com/_/zookeeper/) The official docker image
 
 As far as I know, apache-drill docker image maintained by harisekhon is quite bad so that when drill parses parquet file, it will throw a memory leak execption. It takes me much time to figure out the problem.
 Images maintained by smizy is much better.
@@ -96,22 +96,104 @@ Here we let `dfs`(Apache drill's storage plugin) to choose local filesystem as d
 
 In drill-conf shell, we can use grammar `!run <path>` to run a sql script, so just type
 ```
-0: jdbc:drill: > !run /tpch_create_table.sql
+0: jdbc:drill:> !run /tpch_create_table.sql
 ```
 to create tables and import the data located in `/tpch-data/`. The script will use `dfs.tmp` as database because it is writable in default.
 
 To run the benchmark query,
 ```
-0: jdbc:drill: > !run /tpch-queries/01.q
+0: jdbc:drill:> !run /tpch-queries/01.q
+1/2          use dfs.tmp;
++-------+--------------------------------------+
+|  ok   |               summary                |
++-------+--------------------------------------+
+| true  | Default schema changed to [dfs.tmp]  |
++-------+--------------------------------------+
+1 row selected (0.105 seconds)
+2/2          select
+l_returnflag,
+l_linestatus,
+sum(l_quantity) as sum_qty,
+sum(l_extendedprice) as sum_base_price,
+sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
+sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
+avg(l_quantity) as avg_qty,
+avg(l_extendedprice) as avg_price,
+avg(l_discount) as avg_disc,
+count(*) as count_order
+from
+lineitem
+where
+l_shipdate <= date '1998-12-01' - interval '120' day (3)
+group by
+l_returnflag,
+l_linestatus
+order by
+l_returnflag,
+l_linestatus;
++---------------+---------------+--------------+------------------------+------------------------+------------------------+---------------------+--------------------+-----------------------+--------------+
+| l_returnflag  | l_linestatus  |   sum_qty    |     sum_base_price     |     sum_disc_price     |       sum_charge       |       avg_qty       |     avg_price      |       avg_disc        | count_order  |
++---------------+---------------+--------------+------------------------+------------------------+------------------------+---------------------+--------------------+-----------------------+--------------+
+| A             | F             | 3.7734107E7  | 5.658655440073042E10   | 5.375825713486977E10   | 5.5909065222827415E10  | 25.522005853257337  | 38273.12973462196  | 0.04998529583846936   | 1478493      |
+| N             | F             | 991417.0     | 1.4875047103800015E9   | 1.4130821680541005E9   | 1.469649223194375E9    | 25.516471920522985  | 38284.46776084835  | 0.05009342667421577   | 38854        |
+| N             | O             | 7.2798693E7  | 1.0918605603816025E11  | 1.0372791027784682E11  | 1.078808064265123E11   | 25.5017571306365    | 38248.43782754766  | 0.04999991942984775   | 2854654      |
+| R             | F             | 3.7719753E7  | 5.6568041380899445E10  | 5.374129268460387E10   | 5.588961911983182E10   | 25.50579361269077   | 38250.85462609928  | 0.050009405830198715  | 1478870      |
++---------------+---------------+--------------+------------------------+------------------------+------------------------+---------------------+--------------------+-----------------------+--------------+
+4 rows selected (14.659 seconds)
 ```
 
-_If you get an error tells lack of memory, please open http://ipaddress:8047/options and check_ `planner.memory.percent_per_query`_, update the value to 1.0_
+_**Note**: If you get an error tells lack of memory, please open http://ipaddress:8047/options and check_ `planner.memory.percent_per_query`_, update the value to 1.0_
 
 
-I wrote a script called `bootstrap.sh` to do import data and run queries sequentially. So we can simply run `./bench-drill-local.sh` which called `bootstrap.sh` to get the benchmark result.
+I wrote a script called `bootstrap.sh` to import data and run queries sequentially. So we can simply run `./bench-drill-local.sh` which called `bootstrap.sh` to get the benchmark result.
 The benchmark result will be named as `benchmark_results_single_%d.txt`, where `%d` is the trail number.
 
 
 ## Distributed Mode
+
+Now we step into distributed world!
+
+Basically, 2 things are needed to make Apache Drill distributed.
+1. Use a distributed data source, otherwise the local disk and the single storage node's outbound network becomes bottleneck
+2. Start Drillbit process on each node to distribute query work across the cluster to maximize data locality.
+
+### 1. Prepare HDFS
+
+Apache Drill provides various Storage Plugin, such as HBase, Hive, MongoDB and Kafka etc.
+The Apache Drill already have a internal data storage structure, which may be redundant (I'm not sure) to what HBase and Hive do.
+So I decide to choose raw HDFS as the storage layer.
+
+For a minimized configuration, on a 5 nodes cluster, we do not need redundancy. So I only 1 zookeeper, 1 hadoop namenode, and 5 datanodes(each datanode per node in cluster).
+
+FOr example, I run namenode on 192.168.0.51,
+```
+./run-hadoop-namenode.sh
+```
+and run
+```
+./run-hadoop-datanode.sh
+```
+on all nodes.
+
+After hadoop started, create some directories in HDFS, and copy 'tpch-data/\*.tbl' to HDFS
+```
+docker exec -it datanode hadoop fs -mkdir /tmp
+docker exec -it datanode hadoop fs -mkdir /tpch-data
+docker exec -it datanode hadoop fs -put tpch-data/ /tpch-data
+docker exec -it datanode hadoop fs -ls /tpch-data
+
+Found 8 items
+-rw-r--r--   3 root hadoop   24346144 2018-04-18 05:33 /tpch-data/customer.tbl
+-rw-r--r--   3 root hadoop  759863287 2018-04-18 05:33 /tpch-data/lineitem.tbl
+-rw-r--r--   3 root hadoop       2224 2018-04-18 05:33 /tpch-data/nation.tbl
+-rw-r--r--   3 root hadoop  171952161 2018-04-18 05:33 /tpch-data/orders.tbl
+-rw-r--r--   3 root hadoop   24135125 2018-04-18 05:33 /tpch-data/part.tbl
+-rw-r--r--   3 root hadoop  118984616 2018-04-18 05:33 /tpch-data/partsupp.tbl
+-rw-r--r--   3 root hadoop        389 2018-04-18 05:33 /tpch-data/region.tbl
+-rw-r--r--   3 root hadoop    1409184 2018-04-18 05:33 /tpch-data/supplier.tbl
+```
+
+### 2. Connect Drill to HDFS
+
 
 ## References
