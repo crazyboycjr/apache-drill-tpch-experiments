@@ -238,6 +238,10 @@ single node, see [results/benchmark_results_single_0.txt](https://github.com/cra
 19.q: 1 row selected (20.481 seconds)
 20.q: 181 rows selected (8.262 seconds)
 ```
+|01.q|03.q|04.q|05.q|06.q|07.q|08.q|09.q|10.q|11.q|12.q|13.q|14.q|15a.q|15.q|15c.q|16.q|17.q|18.q|19.q|20.q|
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|4|10|5|5|1|4|2|175|20|1|2|42|1|1|1|1|18,368|1|57|1|181|
+|14.312|10.608|9.512|10.347|8.921|13.392|10.257|14.042|11.048|0.182|10.434|3.88|9.192|0.128|8.692|0.095|2.585|14.768|15.188|20.481|8.262|
 
 five nodes, see [results/benchmark_results_dist_5_nodes_3.txt](https://github.com/crazyboycjr/apache-drill-tpch-experiments/tree/master/results/benchmark_results_dist_5_nodes_3.txt)
 ```
@@ -263,6 +267,10 @@ five nodes, see [results/benchmark_results_dist_5_nodes_3.txt](https://github.co
 19.q: 1 row selected (3.32 seconds)
 20.q: 181 rows selected (2.281 seconds)
 ```
+|01.q|03.q|04.q|05.q|06.q|07.q|08.q|09.q|10.q|11.q|12.q|13.q|14.q|15a.q|15.q|15c.q|16.q|17.q|18.q|19.q|20.q|
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|4|10|5|5|1|4|2|175|20|1|2|42|1|1|1|1|18,368|1|57|1|181|
+|2.582|2.629|1.555|3.297|1.58|2.541|3.107|4.135|2.471|0.211|2.416|2.822|1.655|0.169|1.676|0.097|2.599|3.016|3.743|3.32|2.281|
 
 We can observe that the Apache Drill in distributed mode achieves a better performance on TPC-H dataset.
 However, I still wonder
@@ -297,7 +305,7 @@ In conclusion,
 1. the HDFS plays an important role in disperse the I/O traffic onto multiple nodes, thus decreasing query time greatly
 2. although drillbit process runs distributedly on each node, but it brings little profits to query performance on TPC-H dataset.
 
-This explain why we can achieve similiar results on HDFS cluster with only one drillbit process running.
+This explains why we can achieve similiar results on HDFS cluster with only one drillbit process running.
 
 ## References
 
