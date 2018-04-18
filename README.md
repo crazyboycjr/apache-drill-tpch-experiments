@@ -142,7 +142,7 @@ l_linestatus;
 4 rows selected (14.659 seconds)
 ```
 
-_**Note**: If you get an error tells lack of memory, please open http://ipaddress:8047/options and check_ `planner.memory.percent_per_query`_, update the value to 1.0_
+**Note**: _If you get an error tells lack of memory, please open http://ipaddress:8047/options and check_ `planner.memory.percent_per_query`_, update the value to 1.0_
 
 
 I wrote a script called `bootstrap.sh` to import data and run queries sequentially. So we can simply run `./bench-drill-local.sh` which called `bootstrap.sh` to get the benchmark result.
@@ -151,7 +151,7 @@ The benchmark result will be named as `benchmark_results_single_%d.txt`, where `
 
 ## Distributed Mode
 
-Now we step into distributed world!
+Now we step into the distributed world!
 
 Basically, 2 things are needed to make Apache Drill distributed.
 1. Use a distributed data source, otherwise the local disk and the single storage node's outbound network becomes bottleneck
@@ -175,7 +175,7 @@ and run
 ```
 on all nodes.
 
-After hadoop started, create some directories in HDFS, and copy 'tpch-data/\*.tbl' to HDFS
+After hadoop started, create some directories in HDFS, and copy `tpch-data/*.tbl` to HDFS
 ```
 docker exec -it datanode hadoop fs -mkdir /tmp
 docker exec -it datanode hadoop fs -mkdir /tpch-data
@@ -194,6 +194,20 @@ Found 8 items
 ```
 
 ### 2. Connect Drill to HDFS
+To connect Apache Drill to HDFS, we need to update the dfs storage plugin. Go to http://ipaddress:8047/storage/dfs, and modify `"connection": "hdfs://192.168.0.51:8020/"`, or you just copy the content of `storage.dfs.conf` to the configuration block.
 
+First
+```
+./run-drill-dist.sh
+```
+on one node and open a SQL shell to see if it works properly. Then start this script on all nodes in cluster.
+Wait a while and go to web console, you should see 5 drillbits connection.
+
+**Important Note**: Please make sure the DNS can correctly resolve the FQDN formed like `<hostname>.<domain>`, because the Zookeeper Quorum only returns the hostname of the running drillbit. Thus, one drillbit process can only find other process by hostname, which will cause `UnresolvedAddressException` or `CONNECTION ERROR`.
+Although there is a property in `drill-override.conf` called `drill.exec.rpc.use.ip` seems related to this behavior, change the value could not take any desired effect.
+According to [this page](https://issues.apache.org/jira/browse/DRILL-4934) and [tnis page](http://drill-user.incubator.apache.narkive.com/MgMU4NaA/dockerized-drill-with-bridged-network), the code does not leverage this property.
+
+### Run Benchmark on multiple nodes
+If everything goes well, we should start our benchmark.
 
 ## References
