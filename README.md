@@ -205,9 +205,15 @@ Wait a while and go to web console, you should see 5 drillbits connection.
 
 **Important Note**: Please make sure the DNS can correctly resolve the FQDN formed like `<hostname>.<domain>`, because the Zookeeper Quorum only returns the hostname of the running drillbit. Thus, one drillbit process can only find other process by hostname, which will cause `UnresolvedAddressException` or `CONNECTION ERROR`.
 Although there is a property in `drill-override.conf` called `drill.exec.rpc.use.ip` seems related to this behavior, change the value could not take any desired effect.
-According to [this page](https://issues.apache.org/jira/browse/DRILL-4934) and [tnis page](http://drill-user.incubator.apache.narkive.com/MgMU4NaA/dockerized-drill-with-bridged-network), the code does not leverage this property.
+According to [this page](https://issues.apache.org/jira/browse/DRILL-4934) and [this page](http://drill-user.incubator.apache.narkive.com/MgMU4NaA/dockerized-drill-with-bridged-network), the code does not leverage this property.
 
 ### Run Benchmark on multiple nodes
 If everything goes well, we should start our benchmark.
+```
+./bench-drill-dist.sh
+```
+
+
 
 ## References
+
