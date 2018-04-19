@@ -10,7 +10,7 @@ This project contains scripts and instructions which runs TPC-H on Apache Drill.
 - CPU: Intel(R) Xeon(R) E5-2650 v4, 48 cores per host, 2 NUMA nodes
 - Memory: 128GB
 - Network:
-	- Every node has two NICs: IP address on mgmt port ranges in 10.2.96.[50-54] and corresponding IP address on discrete NIC ranges in 192.168.0.[50-54]
+	- Each node has two NICs: IP address on mgmt port ranges in 10.2.96.[50-54] and corresponding IP address on discrete NIC ranges in 192.168.0.[50-54]
 	- The discrete NIC is 100Gbps per port
 
 
@@ -24,9 +24,9 @@ Images maintained by smizy is much better.
 
 
 ## TPC-H Dataset
-The TPC-H Tools can be download via this [link](https://cjr.host/download/TPC-H_Tools_v2.17.3.zip).
+The TPC-H Tools I use can be download via this [link](https://cjr.host/download/TPC-H_Tools_v2.17.3.zip).
 
-Uncompress the file and go to `dbgen` directory, change the `makefile.suite` like below
+Uncompress the zip file and go to `dbgen` directory, change the `makefile.suite` like below
 ```
 ...
 CC      = gcc
@@ -42,7 +42,7 @@ WORKLOAD = TPCH
 ```
 and `make`. After make finishes, use `./dbgen -vf -s 1` to generate 1GB data. This data should have `.tbl` suffix, move these files to `tpch-data/`
 
-The benchmark queries and create table queries are extracted from [drill-perf-test-framework](https://github.com/mapr/drill-perf-test-framework). I made some changes to them for my environment.
+The benchmark scripts under `tpch-queries/` and create table scripts `tpch_create_table.sql` are extracted from [drill-perf-test-framework](https://github.com/mapr/drill-perf-test-framework). I made some changes to have it work for me.
 
 
 ## Standalone and single node Mode
@@ -56,7 +56,7 @@ docker run --rm -it -p 8047:8047 smizy/apache-drill drill-embedded
 and we can go http://ipaddress:8047/ to access web console.
 
 ---
-But running in embedded mode is boring. We can do a little more things to make Apache Drill run in distributed mode with only one node in the cluste.
+But running in embedded mode is boring. We can do a little more things to make Apache Drill run in distributed mode with only one node in the cluster.
 
 First, start a zookeeper instance on 192.168.0.54
 ```
@@ -75,7 +75,7 @@ drill.exec: {
   zk.connect: "192.168.0.54:2181"
 }
 ```
-
+_Note: There is a rpc.use.ip = true option, I will discuss it later._
 Finally, we map the `drill-override.conf` to inside container and run `drillbit.sh`
 ```bash
 docker run -d --name apache-drill -it \
@@ -85,7 +85,7 @@ docker run -d --name apache-drill -it \
         drillbit.sh run
 ```
 
-Then either access the web console or start a command-line shell
+Then either access the web console or start a SQL command-line shell
 ```
 docker exec -it apache-drill drill-conf
 ```
@@ -94,13 +94,13 @@ On successful run, the prompt should be like `0: jdbc:drill:> ` instead of `0: j
 ### Run Benchmark on single node
 Here we let `dfs`(Apache drill's storage plugin) to choose local filesystem as data source.
 
-In drill-conf shell, we can use grammar `!run <path>` to run a sql script, so just type
+In drill-conf shell, we can use grammar `!run <path>` to run a SQL script, so just type
 ```
 0: jdbc:drill:> !run /tpch_create_table.sql
 ```
-to create tables and import the data located in `/tpch-data/`. The script will use `dfs.tmp` as database because it is writable in default.
+to create tables and import the data located in `/tpch-data/`. The script will use `dfs.tmp` as database because it is writable by default.
 
-To run the benchmark query,
+To run the TPC-H benchmark query,
 ```
 0: jdbc:drill:> !run /tpch-queries/01.q
 1/2          use dfs.tmp;
@@ -148,12 +148,18 @@ l_linestatus;
 I wrote a script called `bootstrap.sh` to import data and run queries sequentially. So we can simply run `./bench-drill-local.sh` which called `bootstrap.sh` to get the benchmark result.
 The benchmark result will be named as `benchmark_results_single_%d.txt`, where `%d` is the trail number.
 
+For example,
+```
+./bench-drill-local.sh
+```
+This will give you results like below(see section Benchmark results).
+
 
 ## Distributed Mode
 
 Now we step into the distributed world!
 
-Basically, 2 things are needed to make Apache Drill distributed.
+Basically, 2 things are needed to make Apache Drill run distributed.
 1. Use a distributed data source, otherwise the local disk and the single storage node's outbound network becomes bottleneck
 2. Start Drillbit process on each node to distribute query work across the cluster to maximize data locality.
 
@@ -161,11 +167,11 @@ Basically, 2 things are needed to make Apache Drill distributed.
 
 Apache Drill provides various Storage Plugin, such as HBase, Hive, MongoDB and Kafka etc.
 The Apache Drill already have a internal data storage structure, which may be redundant (I'm not sure) to what HBase and Hive do.
-So I decide to choose raw HDFS as the storage layer.
+To prevent the benchmark tests the overhead of HBase or Hive instead of Apache Drill itself, I decide to choose raw HDFS as the storage layer.
 
-For a minimized configuration, on a 5 nodes cluster, we do not need redundancy. So I only 1 zookeeper, 1 hadoop namenode, and 5 datanodes(each datanode per node in cluster).
+For a minimized configuration, on a 5 nodes cluster, we do not need redundancy. So I choose only 1 zookeeper, 1 hadoop namenode, and 5 datanodes(each datanode per node in cluster).
 
-FOr example, I run namenode on 192.168.0.51,
+For example, I run namenode on 192.168.0.51,
 ```
 ./run-hadoop-namenode.sh
 ```
@@ -202,6 +208,7 @@ First
 ```
 on one node and open a SQL shell to see if it works properly. Then start this script on all nodes in cluster.
 Wait a while and go to web console, you should see 5 drillbits connection.
+![drill-conn2.png](https://github.com/crazyboycjr/apache-drill-tpch-experiments/blob/master/drill-conn2.png)
 
 **Important Note**: Please make sure the DNS can correctly resolve the FQDN formed like `<hostname>.<domain>`, because the Zookeeper Quorum only returns the hostname of the running drillbit. Thus, one drillbit process can only find other process by hostname, which will cause `UnresolvedAddressException` or `CONNECTION ERROR`.
 Although there is a property in `drill-override.conf` called `drill.exec.rpc.use.ip` seems related to this behavior, change the value could not take any desired effect.
@@ -212,6 +219,7 @@ If everything goes well, we should start our benchmark.
 ```
 ./bench-drill-dist.sh
 ```
+The output as shown below in secion Benchmark results.
 
 ## Benchmark results
 single node, see [results/benchmark_results_single_0.txt](https://github.com/crazyboycjr/apache-drill-tpch-experiments/tree/master/results/benchmark_results_single_0.txt)
@@ -274,7 +282,7 @@ five nodes, see [results/benchmark_results_dist_5_nodes_3.txt](https://github.co
 
 We can observe that the Apache Drill in distributed mode achieves a better performance on TPC-H dataset.
 However, I still wonder
-1. how is the scalibility of Apache Drill
+1. how is the scalability of Apache Drill
 2. where is the bottleneck of these benchmark results.
 
 Apache Drill and Hadoop HDFS are complex systems. I am not a developer, thus, I can only measure it as a black box.
@@ -289,7 +297,7 @@ In this picture, the CPU utilization always floats at ~5%, which indicates that 
 Obviously, memory is not the bottleneck either.
 The I/O seems to be the bottleneck because sometimes the java process reaches more than 262MB/s I/O speed. The timing buffered disk read speed is about 265.20 MB/sec measured by `hdparm` tool.
 
-However, on 100Gbps Ethernet, granularity of 1s interval are too rough, so I write a script which calls `ethtool -S` to read NIC counters to visualize the transient throughput,  
+However, on 100Gbps Ethernet, granularity of 1s interval are too rough, so I write a script which keeps calling `ethtool -S` to read NIC counters to visualize the transient throughput,  
 ```
 measurements/bench.sh
 ```
